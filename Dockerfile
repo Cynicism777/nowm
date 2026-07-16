@@ -10,7 +10,8 @@ RUN npm run build
 FROM python:3.12-slim-bookworm
 WORKDIR /app
 COPY backend/requirements.txt ./
-RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
+ARG PIP_INDEX_URL=https://pypi.org/simple
+RUN pip install --no-cache-dir -i ${PIP_INDEX_URL} -r requirements.txt
 COPY backend/app ./app
 COPY --from=frontend /fe/dist ./frontend/dist
 ENV FRONTEND_DIST=frontend/dist
