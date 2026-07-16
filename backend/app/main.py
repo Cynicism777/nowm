@@ -7,7 +7,7 @@ import pathlib
 import urllib.parse
 import httpx
 from fastapi import FastAPI, Request, HTTPException, Query
-from fastapi.responses import Response, StreamingResponse, FileResponse
+from fastapi.responses import Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -22,6 +22,8 @@ app = FastAPI(title="nowm · cynic 工具箱")
 FRONTEND_DIST = pathlib.Path(
     os.environ.get("FRONTEND_DIST",
                    str(pathlib.Path(__file__).resolve().parents[2] / "frontend" / "dist")))
+
+MAX_PACKAGE_IMAGES = 50
 
 
 class ParseIn(BaseModel):
@@ -59,7 +61,7 @@ def api_parse(body: ParseIn, request: Request):
         log_event(logger, client_ip=request.client.host, action="parse",
                   input=body.share, status="expired")
         raise HTTPException(422, str(e))
-    except (ParseError, httpx.HTTPError) as e:
+    except (ParseError, httpx.HTTPError):
         log_event(logger, client_ip=request.client.host, action="parse",
                   input=body.share, status="parse_error")
         raise HTTPException(502, "解析失败，接口可能已变更")
@@ -86,6 +88,8 @@ def api_image(request: Request, file_id: str = Query(...),
     try:
         data = fetch_image(file_id)
     except ImageFetchError as e:
+        log_event(logger, client_ip=request.client.host, action="image",
+                  file_id=file_id, status="fetch_error")
         raise HTTPException(502, str(e))
     log_event(logger, client_ip=request.client.host, action="image",
               file_id=file_id, status="ok", bytes=len(data))
@@ -98,6 +102,11 @@ def api_image(request: Request, file_id: str = Query(...),
 
 @app.post("/api/package")
 def api_package(body: PackageIn, request: Request):
+    if not body.file_ids:
+        raise HTTPException(400, "未提供图片")
+    if len(body.file_ids) > MAX_PACKAGE_IMAGES:
+        raise HTTPException(400, "图片数量超出上限")
+
     buf = io.BytesIO()
     ok = 0
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_STORED) as zf:
@@ -109,8 +118,15 @@ def api_package(body: PackageIn, request: Request):
             zf.writestr(f"{idx:02d}.png", data)
             ok += 1
     buf.seek(0)
+
+    if ok == 0:
+        log_event(logger, client_ip=request.client.host, action="package",
+                  image_count=len(body.file_ids), ok=ok, status="all_failed")
+        raise HTTPException(502, "全部图片拉取失败")
+
+    status = "ok" if ok == len(body.file_ids) else "partial"
     log_event(logger, client_ip=request.client.host, action="package",
-              image_count=len(body.file_ids), ok=ok, status="ok")
+              image_count=len(body.file_ids), ok=ok, status=status)
     name = urllib.parse.quote(_safe_name(body.title) + ".zip")
     return StreamingResponse(
         buf, media_type="application/zip",

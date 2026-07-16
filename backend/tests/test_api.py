@@ -37,3 +37,15 @@ def test_package_endpoint(client):
     assert r.headers["content-type"] == "application/zip"
     zf = zipfile.ZipFile(io.BytesIO(r.content))
     assert len(zf.namelist()) == 2
+
+def test_package_endpoint_all_failed(client, monkeypatch):
+    from app import cdn
+
+    def _raise(fid):
+        raise cdn.ImageFetchError("boom")
+
+    monkeypatch.setattr(main, "fetch_image", _raise)
+    r = client.post("/api/package",
+                    json={"file_ids": ["notes_pre_post/aaa", "notes_pre_post/bbb"],
+                          "title": "我的笔记"})
+    assert r.status_code == 502
