@@ -1,4 +1,5 @@
 import io
+import os
 import re
 import time
 import zipfile
@@ -18,7 +19,9 @@ from app.logging_conf import setup_logging, log_event
 logger = setup_logging()
 app = FastAPI(title="nowm · cynic 工具箱")
 
-FRONTEND_DIST = pathlib.Path(__file__).resolve().parents[2] / "frontend" / "dist"
+FRONTEND_DIST = pathlib.Path(
+    os.environ.get("FRONTEND_DIST",
+                   str(pathlib.Path(__file__).resolve().parents[2] / "frontend" / "dist")))
 
 
 class ParseIn(BaseModel):
