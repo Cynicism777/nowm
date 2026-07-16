@@ -9,6 +9,7 @@ venv/
 node_modules/
 dist/
 .vite/
+*.tsbuildinfo
 
 # 运行时产物
 logs/
