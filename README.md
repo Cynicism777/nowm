@@ -34,17 +34,17 @@
 └── docker-compose.yml
 ```
 
-> 说明：`backend/`、`frontend/`、`Dockerfile`、`docker-compose.yml` 将在实现阶段补齐；当前仓库先纳入文档与设计。
-
 ## 快速开始
-
-> 实现完成后：
 
 ```bash
 docker compose up -d --build
 ```
 
 默认监听 `0.0.0.0:8823`（宿主机端口可在 `docker-compose.yml` 调整），浏览器访问 `http://<服务器IP>:8823`。
+
+日志写入 `./logs/access.log`（挂载自容器 `/app/logs`），可用于留痕/审计。
+
+停止服务：`docker compose down`（镜像默认保留，加 `--rmi local` 可一并清理镜像）。
 
 ## 免责声明
 
