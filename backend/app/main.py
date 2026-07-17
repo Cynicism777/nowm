@@ -5,19 +5,72 @@ import time
 import zipfile
 import pathlib
 import urllib.parse
+from contextlib import asynccontextmanager
+
 import httpx
-from fastapi import FastAPI, Request, HTTPException, Query
-from fastapi.responses import FileResponse, Response, StreamingResponse
+from fastapi import FastAPI, Request, HTTPException, Query, Response
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from starlette.middleware.base import BaseHTTPMiddleware
 
+from app import auth as authlib
 from app.parser import (resolve, parse_note, NoteData, UA,
                         NoLinkError, ExpiredError, ParseError)
 from app.cdn import fetch_image, ImageFetchError
 from app.logging_conf import setup_logging, log_event
 
 logger = setup_logging()
-app = FastAPI(title="nowm · cynic 工具箱")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.auth_cfg = authlib.load_config()
+    yield
+
+
+app = FastAPI(title="nowm · cynic 工具箱", lifespan=lifespan)
+
+
+class SessionAuthMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        path = request.url.path
+        if path.startswith("/api/") and not path.startswith("/api/auth/"):
+            cfg = request.app.state.auth_cfg
+            raw = request.cookies.get(authlib.COOKIE_NAME, "")
+            if not authlib.verify_session(raw, cfg.session_secret):
+                return Response(
+                    content='{"detail":"Unauthorized"}',
+                    status_code=401,
+                    media_type="application/json",
+                )
+        return await call_next(request)
+
+
+app.add_middleware(SessionAuthMiddleware)
+
+
+@app.get("/api/auth/claim")
+def api_auth_claim(invite: str = Query(...)):
+    cfg = app.state.auth_cfg
+    if not authlib.invite_ok(invite, cfg.invite_token):
+        raise HTTPException(401, "邀请无效")
+    value = authlib.mint_session(cfg.session_secret, cfg.session_days)
+    resp = Response(
+        content='{"ok":true}',
+        media_type="application/json",
+    )
+    kw = authlib.session_cookie_kwargs(cfg)
+    resp.set_cookie(value=value, **kw)
+    return resp
+
+
+@app.get("/api/auth/status")
+def api_auth_status(request: Request):
+    cfg = app.state.auth_cfg
+    raw = request.cookies.get(authlib.COOKIE_NAME, "")
+    ok = authlib.verify_session(raw, cfg.session_secret)
+    return {"authenticated": ok}
 
 FRONTEND_DIST = pathlib.Path(
     os.environ.get("FRONTEND_DIST",

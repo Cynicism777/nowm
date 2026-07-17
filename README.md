@@ -46,6 +46,23 @@ docker compose up -d --build
 
 停止服务：`docker compose down`（镜像默认保留，加 `--rmi local` 可一并清理镜像）。
 
+## 访问控制（邀请链接）
+
+首次部署时复制环境变量示例，并为邀请令牌和会话密钥分别生成独立的随机值：
+
+```bash
+cp .env.example .env
+openssl rand -hex 32  # 填入 INVITE_TOKEN
+openssl rand -hex 32  # 填入 SESSION_SECRET
+docker compose up -d --build
+```
+
+将邀请链接 `https://<你的域名>/?invite=<INVITE_TOKEN>` 发给获准访问的用户。局域网调试可使用
+`http://<IP>:8823/?invite=<INVITE_TOKEN>`，此时须在 `.env` 中设置 `COOKIE_SECURE=false`。
+
+需要吊销访问时，替换 `INVITE_TOKEN` 可让旧邀请链接失效；替换 `SESSION_SECRET` 可让全部现有 Cookie
+立即失效。修改后运行 `docker compose up -d` 应用新配置。
+
 ## HTTPS 与手机存相册
 
 保存图片按设备能力自适应：**手机走系统分享面板可直接存入相册，PC 走文件/ZIP 下载**。
