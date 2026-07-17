@@ -14,6 +14,7 @@ dist/
 # 运行时产物
 logs/
 *.log
+.env
 
 # 系统/编辑器
 .DS_Store
