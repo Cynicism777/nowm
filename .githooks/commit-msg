@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Strip Cursor Co-authored-by trailers so they never land in this repo.
+msg_file=$1
+tmp=$(mktemp)
+# Remove Co-authored-by: Cursor ... lines and collapse trailing blank lines
+grep -v -E '^Co-authored-by:[[:space:]]*Cursor[[:space:]]*<' "$msg_file" > "$tmp" || true
+# Trim trailing empty lines
+python3 -c "
+import pathlib,sys
+p=pathlib.Path(sys.argv[1])
+lines=p.read_text(encoding='utf-8',errors='replace').splitlines()
+while lines and lines[-1].strip()=='':
+    lines.pop()
+p.write_text(('\\n'.join(lines)+('\\n' if lines else '')), encoding='utf-8')
+" "$tmp"
+mv "$tmp" "$msg_file"
