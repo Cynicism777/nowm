@@ -8,10 +8,14 @@ RUN npm run build
 
 # 阶段二：后端运行时
 FROM python:3.12-slim-bookworm
+
+RUN mkdir -p /root/.config/pip && \
+    echo "[global]" > /root/.config/pip/pip.conf && \
+    echo "index-url = https://pypi.tuna.tsinghua.edu.cn/simple" >> /root/.config/pip/pip.conf
+
 WORKDIR /app
 COPY backend/requirements.txt ./
-ARG PIP_INDEX_URL=https://pypi.org/simple
-RUN pip install --no-cache-dir -i ${PIP_INDEX_URL} -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/app ./app
 COPY --from=frontend /fe/dist ./frontend/dist
 ENV FRONTEND_DIST=frontend/dist
