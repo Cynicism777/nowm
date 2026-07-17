@@ -9,6 +9,7 @@ export async function parseShare(share: string): Promise<NoteResp> {
   const r = await fetch("/api/parse", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify({ share }),
   });
   if (!r.ok) {
@@ -22,6 +23,7 @@ export async function downloadZip(fileIds: string[], title: string) {
   const r = await fetch("/api/package", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify({ file_ids: fileIds, title }),
   });
   if (!r.ok) {
