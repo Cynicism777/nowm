@@ -7,7 +7,7 @@ import pathlib
 import urllib.parse
 import httpx
 from fastapi import FastAPI, Request, HTTPException, Query
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -134,4 +134,24 @@ def api_package(body: PackageIn, request: Request):
 
 
 if FRONTEND_DIST.is_dir():
-    app.mount("/", StaticFiles(directory=str(FRONTEND_DIST), html=True), name="static")
+    # 静态资源走 /assets；其余前端路由回退到 index.html（SPA history fallback）
+    assets_dir = FRONTEND_DIST / "assets"
+    if assets_dir.is_dir():
+        app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
+
+    @app.get("/")
+    def spa_index():
+        return FileResponse(FRONTEND_DIST / "index.html")
+
+    @app.get("/{full_path:path}")
+    def spa_fallback(full_path: str):
+        if full_path == "api" or full_path.startswith("api/"):
+            raise HTTPException(404, "Not Found")
+        candidate = (FRONTEND_DIST / full_path).resolve()
+        try:
+            candidate.relative_to(FRONTEND_DIST.resolve())
+        except ValueError:
+            raise HTTPException(404, "Not Found")
+        if candidate.is_file():
+            return FileResponse(candidate)
+        return FileResponse(FRONTEND_DIST / "index.html")
