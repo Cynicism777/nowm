@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { parseShare, downloadZip, type NoteResp } from "../api";
+import { parseShare, type NoteResp } from "../api";
 import ImageGrid from "../components/ImageGrid";
+import { saveAll, supportsFileShare } from "../save";
 
 export default function XhsTool() {
   const [share, setShare] = useState("");
@@ -22,11 +23,16 @@ export default function XhsTool() {
     }
   }
 
-  async function onZip() {
+  const canShare = supportsFileShare();
+
+  async function onSaveAll() {
     if (!note || zipping) return;
-    setZipping(true);
+    setZipping(true); setErr("");
     try {
-      await downloadZip(note.images.map((i) => i.file_id), note.title);
+      const res = await saveAll(note.images, note.title);
+      if (res.kind === "guide") {
+        setErr("此设备暂不支持批量存相册，请用每张图片上的「保存」按钮逐张存到相册");
+      }
     } catch (e) {
       setErr((e as Error).message);
     } finally {
@@ -70,8 +76,10 @@ export default function XhsTool() {
                   @{note.author} · {note.images.length} 张
                 </div>
               </div>
-              <button className="btn" onClick={onZip} disabled={zipping}>
-                {zipping ? "打包中…" : "打包下载全部"}
+              <button className="btn" onClick={onSaveAll} disabled={zipping}>
+                {zipping
+                  ? (canShare ? "保存中…" : "打包中…")
+                  : (canShare ? "保存全部" : "打包下载 ZIP")}
               </button>
             </div>
             <ImageGrid images={note.images} />
