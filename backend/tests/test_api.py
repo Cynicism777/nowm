@@ -13,7 +13,10 @@ def client(monkeypatch):
         images=[parser.ImageMeta("notes_pre_post/aaa", 1440, 1920),
                 parser.ImageMeta("notes_pre_post/bbb", 1080, 1440)]))
     monkeypatch.setattr(main, "fetch_image", lambda fid: b"\x89PNG" + fid.encode())
-    return TestClient(main.app)
+    with TestClient(main.app) as c:
+        c.get("/api/auth/claim",
+              params={"invite": "test-invite-token-xxxxxxxxxxxxxxxx"})
+        yield c
 
 def test_parse_endpoint(client):
     r = client.post("/api/parse", json={"share": "http://xhslink.com/o/x"})
