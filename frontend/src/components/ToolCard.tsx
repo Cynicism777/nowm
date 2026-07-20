@@ -8,18 +8,15 @@ export default function ToolCard(
   const reduced = useReducedMotion();
   return (
     <motion.button
+      type="button"
+      className="tool-card"
       onClick={() => nav(to)}
-      whileHover={reduced ? {} : { y: -4 }}
-      whileTap={reduced ? {} : { scale: 0.98 }}
+      whileHover={reduced ? {} : { y: -3 }}
+      whileTap={reduced ? {} : { scale: 0.985 }}
       transition={{ type: "spring", bounce: 0, duration: 0.3 }}
-      style={{
-        textAlign: "left", border: "none", cursor: "pointer",
-        background: "#fff", borderRadius: "var(--radius)", padding: 22,
-        boxShadow: "0 6px 24px rgba(0,0,0,0.06)", width: "100%",
-      }}
     >
-      <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 6 }}>{title}</div>
-      <div style={{ color: "var(--muted)", fontSize: 14 }}>{desc}</div>
+      <span className="tool-card__title">{title}</span>
+      <span className="tool-card__desc">{desc}</span>
     </motion.button>
   );
 }
