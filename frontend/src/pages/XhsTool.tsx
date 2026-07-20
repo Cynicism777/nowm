@@ -41,38 +41,33 @@ export default function XhsTool() {
   }
 
   return (
-    <>
-      <div className="toolbar" style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <Link to="/" style={{ textDecoration: "none", color: "var(--accent)" }}>‹ 返回</Link>
-        <h1 style={{ fontSize: 20, margin: 0 }}>小红书无水印下载</h1>
-      </div>
-      <div className="container">
-        <div style={{ display: "flex", gap: 10 }}>
+    <div className="paper-app">
+      <header className="topbar">
+        <Link to="/" className="back">‹ 返回</Link>
+        <h1 className="page-title">小红书无水印</h1>
+      </header>
+      <div className="sheet">
+        <div className="parse-row">
           <input
+            className="field"
             value={share}
             onChange={(e) => setShare(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && onParse()}
             placeholder="粘贴小红书分享链接或文案"
-            style={{ flex: 1, padding: "12px 16px", borderRadius: 12,
-                     border: "1px solid #d2d2d7", fontSize: 15 }}
           />
           <button className="btn" onClick={onParse} disabled={loading}>
             {loading ? "解析中…" : "解析"}
           </button>
         </div>
 
-        {err && <p style={{ color: "#d70015", marginTop: 14 }}>{err}</p>}
+        {err && <p className="err">{err}</p>}
 
         {note && (
-          <div style={{ marginTop: 22 }}>
-            <div style={{ display: "flex", justifyContent: "space-between",
-                          alignItems: "center", marginBottom: 14, gap: 12 }}>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontWeight: 600, whiteSpace: "nowrap",
-                              overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {note.title}
-                </div>
-                <div style={{ color: "var(--muted)", fontSize: 13 }}>
+          <>
+            <div className="result-head">
+              <div className="result-meta">
+                <div className="result-title">{note.title}</div>
+                <div className="result-sub">
                   @{note.author} · {note.images.length} 张
                 </div>
               </div>
@@ -83,9 +78,9 @@ export default function XhsTool() {
               </button>
             </div>
             <ImageGrid images={note.images} />
-          </div>
+          </>
         )}
       </div>
-    </>
+    </div>
   );
 }

@@ -33,7 +33,15 @@ export default function App() {
     return () => { cancelled = true; };
   }, []);
 
-  if (!ready) return null;
+  if (!ready) {
+    return (
+      <div className="paper-app">
+        <div className="boot">
+          <span className="mark">nowm</span>
+        </div>
+      </div>
+    );
+  }
   if (!authed) return <Locked />;
 
   return (
